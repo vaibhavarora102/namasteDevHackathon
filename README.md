@@ -1,5 +1,27 @@
 # Shared Knowledge / Private Memory Agents
 
+**🔴 Live demo:** [namastedevhackathon-p8avfpywoxccw3nfeggs7e.streamlit.app](https://namastedevhackathon-p8avfpywoxccw3nfeggs7e.streamlit.app/)
+**📦 Repo:** [github.com/vaibhavarora102/namasteDevHackathon](https://github.com/vaibhavarora102/namasteDevHackathon)
+
+Built for the [OpenAI × NamasteDev Codex Hackathon](https://namastedev.com/hackathon) (July 2026).
+
+## The 10-second pitch
+
+AI agents that remember everything either leak private data across sessions, or
+forget everything and never improve — there's rarely a middle ground. This project
+is a working pattern for that middle ground: every chat session has **fully
+private memory**, but when a session ends, an LLM distills it into short,
+**anonymized, generalized lessons**, and *only* those lessons are shared across
+every other agent persona and every future session. No agent ever reads another
+session's raw transcript — the anonymization step is explicit, visible, and
+auditable, not something happening silently in the background.
+
+Three agent personas (Coding Tutor, Research Assistant, Wellness Coach) share one
+knowledge base but never share raw conversations — try it live: teach the Coding
+Tutor a debugging tip, consolidate the session, then ask the Research Assistant a
+related question and watch it retrieve that same lesson, stripped of anything
+personal.
+
 A small multi-agent chat system built with **LangChain + LangGraph + Streamlit** that
 demonstrates a specific memory pattern:
 
@@ -15,23 +37,38 @@ that shared knowledge base — but none of them can ever see another session's r
 private memory.
 
 ```
-┌─────────────┐   raw transcript    ┌───────────────────┐
-│  Session A   │ ──────────────────▶│  Private Memory    │  (SQLite, per-session,
-│ (Coding Tutor)│                   │  (never shared)     │   never read by others)
-└─────────────┘                    └───────────────────┘
-       │  "End session & consolidate"
-       ▼
-┌─────────────────────┐   generalize +   ┌────────────────────┐
-│  Extractor (LLM)     │   anonymize     │  Shared Knowledge   │  (Chroma vector
-│  private -> general  │ ───────────────▶│  Base                │   store, global)
-└─────────────────────┘                  └────────────────────┘
-                                                    │
-                                     read by ANY agent, ANY future session
-                                                    ▼
-┌─────────────┐                          ┌────────────────────┐
-│  Session B   │ ◀────────────────────── │  retrieved at        │
-│(Research Asst)│      RAG lookup         │  answer time         │
-└─────────────┘                          └────────────────────┘
+  +--------------------------------------+
+  |      Coding Tutor -- Session A       |
+  +--------------------------------------+
+                      |
+           raw chat, every turn
+                      v
+  +--------------------------------------+
+  |       PRIVATE MEMORY  (SQLite)       |
+  |      per-session, never shared       |
+  +--------------------------------------+
+                      |
+       "End session & consolidate"
+                      v
+  +--------------------------------------+
+  |           EXTRACTOR  (LLM)           |
+  |        anonymize + generalize        |
+  +--------------------------------------+
+                      |
+         generalized lessons only
+                      v
+  +--------------------------------------+
+  |      SHARED KNOWLEDGE  (Chroma)      |
+  |        global, RAG-searchable        |
+  +--------------------------------------+
+                      |
+    semantic retrieval at answer time
+                      v
+  +--------------------------------------+
+  |   Research Assistant -- Session B    |
+  | different agent, brand-new session,  |
+  | never saw Session A's raw transcript |
+  +--------------------------------------+
 ```
 
 ## What this demonstrates
@@ -119,6 +156,25 @@ streamlit run app.py
 ```
 
 Open the URL Streamlit prints (usually `http://localhost:8501`).
+
+## 60-second test (for judges)
+
+Try this directly on the [live demo](https://namastedevhackathon-p8avfpywoxccw3nfeggs7e.streamlit.app/) — no setup needed:
+
+1. Select **Coding Tutor** in the sidebar. Send: *"Hey, I'm stuck — my async
+   function hangs because I'm calling `time.sleep()` inside `async def` instead
+   of `await asyncio.sleep()`."*
+2. Click **"📚 End session & consolidate to shared knowledge"**. Open the
+   shared knowledge expander — the lesson is there, but your identity/phrasing
+   is gone, replaced by an impersonal, reusable statement.
+3. Switch to **Research Assistant** (a brand-new, unrelated private session)
+   and ask: *"Why would an async Python function never return control?"*
+   Check the **"🔍 Shared knowledge used for this answer"** expander — it
+   retrieved the same lesson the Coding Tutor session produced, without ever
+   seeing that transcript.
+
+That round trip — private conversation → anonymized distillation → cross-agent
+retrieval — is the whole idea.
 
 ## Using the app
 
